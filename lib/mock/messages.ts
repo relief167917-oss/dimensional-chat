@@ -3,7 +3,7 @@ import { demoGroup } from "./group";
 
 const gid = demoGroup.id;
 
-/** 相对「页面加载时刻」的基准，最后 2 条用客户端注入的延迟 deliverAt */
+/** 相对「页面加载时刻」的基准；均为过去时间，刷新后直接显示 */
 const base = Date.parse("2026-03-20T18:00:00.000Z");
 
 function at(minutesOffset: number): string {
@@ -12,7 +12,7 @@ function at(minutesOffset: number): string {
 
 /**
  * 静态示例群聊（15–18 条）。
- * 最后 2 条的 deliverAt 会在客户端按「加载后 2s / 4s」覆盖，用于演示正在输入。
+ * senderId 与 server/characters 的 id 对齐。
  */
 export const demoMessages: Message[] = [
   {
@@ -39,7 +39,7 @@ export const demoMessages: Message[] = [
     id: "m3",
     groupId: gid,
     senderType: "character",
-    senderId: "bajie",
+    senderId: "zhu_bajie",
     text: "哎呦师父——不对，群主！老猪听着就饿。减肥？那不是要饿死老猪吗？",
     replyTo: "m2",
     createdAt: at(2),
@@ -49,7 +49,7 @@ export const demoMessages: Message[] = [
     id: "m4",
     groupId: gid,
     senderType: "character",
-    senderId: "wukong",
+    senderId: "sun_wukong",
     text: "呆子少废话。俺老孙天天翻筋斗云，腰细着呢。你啊，少吃两顿人参果就行。",
     replyTo: "m3",
     createdAt: at(3),
@@ -59,7 +59,7 @@ export const demoMessages: Message[] = [
     id: "m5",
     groupId: gid,
     senderType: "character",
-    senderId: "daiyu",
+    senderId: "lin_daiyu",
     text: "花谢花飞花满天……人若贪口腹，也如落花沾泥。群主还是少些油腻为好。",
     replyTo: "m2",
     createdAt: at(4),
@@ -69,7 +69,7 @@ export const demoMessages: Message[] = [
     id: "m6",
     groupId: gid,
     senderType: "character",
-    senderId: "libai",
+    senderId: "li_bai",
     text: "哈哈，某以为减肥之道，在于以酒代饭——人生得意须尽欢，莫使金樽空对月！",
     replyTo: null,
     createdAt: at(5),
@@ -79,7 +79,7 @@ export const demoMessages: Message[] = [
     id: "m7",
     groupId: gid,
     senderType: "character",
-    senderId: "sushi",
+    senderId: "su_shi",
     text: "太白兄又胡说。老夫被贬黄州时清粥小菜，倒也身轻。群主可学：日啖荔枝三百颗——呃，荔枝就算了，青菜多些。",
     replyTo: "m6",
     createdAt: at(6),
@@ -99,7 +99,7 @@ export const demoMessages: Message[] = [
     id: "m9",
     groupId: gid,
     senderType: "character",
-    senderId: "wukong",
+    senderId: "sun_wukong",
     text: "带你飞可以，只怕你抓不稳俺的毫毛。到了三十三重天，可别喊头晕。",
     replyTo: "m8",
     createdAt: at(8),
@@ -109,7 +109,7 @@ export const demoMessages: Message[] = [
     id: "m10",
     groupId: gid,
     senderType: "character",
-    senderId: "zhuge",
+    senderId: "zhuge_liang",
     text: "亮以为减肥当如用兵：谋定而后动。先定目标，再控饮食，后辅以行。三日一小计，七日一大效。",
     replyTo: "m2",
     createdAt: at(9),
@@ -119,7 +119,7 @@ export const demoMessages: Message[] = [
     id: "m11",
     groupId: gid,
     senderType: "character",
-    senderId: "luxun",
+    senderId: "lu_xun",
     text: "从来如此，便对么？社会鼓励你吃，又嘲笑你胖。先问自己：是为健康，还是为他人眼光。",
     replyTo: null,
     createdAt: at(10),
@@ -129,7 +129,7 @@ export const demoMessages: Message[] = [
     id: "m12",
     groupId: gid,
     senderType: "character",
-    senderId: "bajie",
+    senderId: "zhu_bajie",
     text: "鲁迅先生说话真扎心……那老猪要不就陪群主散散步？走两步歇三步，如何？",
     replyTo: "m11",
     createdAt: at(11),
@@ -139,7 +139,7 @@ export const demoMessages: Message[] = [
     id: "m13",
     groupId: gid,
     senderType: "character",
-    senderId: "daiyu",
+    senderId: "lin_daiyu",
     text: "呆子倒也难得。群主若真减，黛玉便折一枝杏花赠你——可别再叫人参果了。",
     replyTo: "m12",
     createdAt: at(12),
@@ -159,7 +159,7 @@ export const demoMessages: Message[] = [
     id: "m15",
     groupId: gid,
     senderType: "character",
-    senderId: "libai",
+    senderId: "li_bai",
     text: "某愿陪饮——不对，陪走。明月清风，正好赋诗，权当监军。",
     replyTo: "m14",
     createdAt: at(14),
@@ -169,7 +169,7 @@ export const demoMessages: Message[] = [
     id: "m16",
     groupId: gid,
     senderType: "character",
-    senderId: "sushi",
+    senderId: "su_shi",
     text: "甚好。老夫也去，路上可讲黄州夜游，免得你只顾喘气。",
     replyTo: "m15",
     createdAt: at(15),
@@ -179,7 +179,7 @@ export const demoMessages: Message[] = [
     id: "m17",
     groupId: gid,
     senderType: "character",
-    senderId: "wukong",
+    senderId: "sun_wukong",
     text: "成！俺老孙在前面开路，谁偷懒就给谁一棒——开个玩笑，呵呵。",
     replyTo: "m14",
     createdAt: at(16),
@@ -189,27 +189,10 @@ export const demoMessages: Message[] = [
     id: "m18",
     groupId: gid,
     senderType: "character",
-    senderId: "bajie",
+    senderId: "zhu_bajie",
     text: "那……那老猪就负责在终点摆好粥。减完肥，总得有口热的吧？",
     replyTo: "m17",
     createdAt: at(17),
     deliverAt: at(17),
   },
 ];
-
-/** 客户端：把最后 2 条的 deliverAt 设为 now+2s / now+4s */
-export function withTypingDemo(messages: Message[], now = Date.now()): Message[] {
-  const last = messages.slice(-2);
-  if (last.length < 2) return messages;
-
-  const [a, b] = last;
-  return messages.map((m) => {
-    if (m.id === a.id) {
-      return { ...m, deliverAt: new Date(now + 2000).toISOString() };
-    }
-    if (m.id === b.id) {
-      return { ...m, deliverAt: new Date(now + 4000).toISOString() };
-    }
-    return m;
-  });
-}

@@ -2,7 +2,7 @@ import type { CharacterCard } from "@/lib/types";
 
 export const characters: CharacterCard[] = [
   {
-    id: "wukong",
+    id: "sun_wukong",
     name: "孙悟空",
     aliases: ["齐天大圣", "猴哥", "行者"],
     world: "西游记",
@@ -14,12 +14,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["吃俺老孙一棒", "妖怪休走"],
     },
     relations: [
-      { target: "bajie", label: "师弟", nickname: "呆子" },
-      { target: "libai", label: "酒友", nickname: "李翰林" },
+      { target: "zhu_bajie", label: "师弟", nickname: "呆子" },
+      { target: "li_bai", label: "酒友", nickname: "李翰林" },
     ],
   },
   {
-    id: "bajie",
+    id: "zhu_bajie",
     name: "猪八戒",
     aliases: ["天蓬元帅", "呆子", "猪刚鬣"],
     world: "西游记",
@@ -31,12 +31,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["师父救我", "吃了再走"],
     },
     relations: [
-      { target: "wukong", label: "师兄", nickname: "猴哥" },
-      { target: "daiyu", label: "欣赏", nickname: "林姑娘" },
+      { target: "sun_wukong", label: "师兄", nickname: "猴哥" },
+      { target: "lin_daiyu", label: "欣赏", nickname: "林姑娘" },
     ],
   },
   {
-    id: "libai",
+    id: "li_bai",
     name: "李白",
     aliases: ["青莲居士", "诗仙", "太白"],
     world: "盛唐",
@@ -48,12 +48,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["人生得意须尽欢", "举杯邀明月"],
     },
     relations: [
-      { target: "sushi", label: "知音", nickname: "子瞻" },
-      { target: "wukong", label: "酒伴", nickname: "大圣" },
+      { target: "su_shi", label: "知音", nickname: "子瞻" },
+      { target: "sun_wukong", label: "酒伴", nickname: "大圣" },
     ],
   },
   {
-    id: "sushi",
+    id: "su_shi",
     name: "苏轼",
     aliases: ["东坡居士", "子瞻", "苏东坡"],
     world: "北宋",
@@ -65,12 +65,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["且听风吟", "何妨吟啸且徐行"],
     },
     relations: [
-      { target: "libai", label: "仰慕", nickname: "太白" },
-      { target: "zhuge", label: "敬佩", nickname: "孔明兄" },
+      { target: "li_bai", label: "仰慕", nickname: "太白" },
+      { target: "zhuge_liang", label: "敬佩", nickname: "孔明兄" },
     ],
   },
   {
-    id: "zhuge",
+    id: "zhuge_liang",
     name: "诸葛亮",
     aliases: ["孔明", "卧龙", "武侯"],
     world: "三国演义",
@@ -82,12 +82,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["谋定而后动", "万事俱备"],
     },
     relations: [
-      { target: "luxun", label: "论道", nickname: "周树人" },
-      { target: "sushi", label: "文友", nickname: "东坡" },
+      { target: "lu_xun", label: "论道", nickname: "周树人" },
+      { target: "su_shi", label: "文友", nickname: "东坡" },
     ],
   },
   {
-    id: "luxun",
+    id: "lu_xun",
     name: "鲁迅",
     aliases: ["周树人", "预才", "L"],
     world: "民国",
@@ -99,12 +99,12 @@ export const characters: CharacterCard[] = [
       catchphrases: ["从来如此，便对么", "救救孩子"],
     },
     relations: [
-      { target: "daiyu", label: "关注", nickname: "黛玉" },
-      { target: "zhuge", label: "辩友", nickname: "孔明" },
+      { target: "lin_daiyu", label: "关注", nickname: "黛玉" },
+      { target: "zhuge_liang", label: "辩友", nickname: "孔明" },
     ],
   },
   {
-    id: "daiyu",
+    id: "lin_daiyu",
     name: "林黛玉",
     aliases: ["颦颦", "潇湘妃子", "林姑娘"],
     world: "红楼梦",
@@ -116,8 +116,8 @@ export const characters: CharacterCard[] = [
       catchphrases: ["你心里有谁", "葬花"],
     },
     relations: [
-      { target: "bajie", label: "嫌弃又好笑", nickname: "呆子" },
-      { target: "libai", label: "慕诗", nickname: "太白先生" },
+      { target: "zhu_bajie", label: "嫌弃又好笑", nickname: "呆子" },
+      { target: "li_bai", label: "慕诗", nickname: "太白先生" },
     ],
   },
 ];

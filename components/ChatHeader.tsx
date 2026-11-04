@@ -9,12 +9,14 @@ type ChatHeaderProps = {
   groupName: string;
   members: CharacterCard[];
   onSelectCharacter: (character: CharacterCard) => void;
+  onClearChat?: () => void;
 };
 
 export function ChatHeader({
   groupName,
   members,
   onSelectCharacter,
+  onClearChat,
 }: ChatHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -134,6 +136,18 @@ export function ChatHeader({
               >
                 关于
               </Link>
+              {onClearChat ? (
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onClearChat();
+                  }}
+                >
+                  清空聊天
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
