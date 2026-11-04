@@ -32,6 +32,9 @@ export function Composer({ characters, onSend }: ComposerProps) {
     [characters, mention],
   );
 
+  const safeIndex =
+    filtered.length === 0 ? 0 : Math.min(activeIndex, filtered.length - 1);
+
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -39,34 +42,27 @@ export function Composer({ characters, onSend }: ComposerProps) {
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
   }, [text]);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [mention?.query, mention?.start]);
-
-  useEffect(() => {
-    if (filtered.length === 0) return;
-    if (activeIndex >= filtered.length) {
-      setActiveIndex(filtered.length - 1);
-    }
-  }, [filtered.length, activeIndex]);
-
-  function detectMention(value: string, caret: number) {
+  function parseMention(value: string, caret: number): MentionState {
     const before = value.slice(0, caret);
     const match = before.match(/@([^\s@]*)$/);
-    if (!match) {
-      setMention(null);
-      return;
-    }
-    setMention({
+    if (!match) return null;
+    return {
       start: caret - match[0].length,
       query: match[1] ?? "",
-    });
+    };
   }
 
   function handleChange(value: string) {
     setText(value);
     const caret = textareaRef.current?.selectionStart ?? value.length;
-    detectMention(value, caret);
+    const next = parseMention(value, caret);
+    const mentionChanged =
+      (mention === null) !== (next === null) ||
+      (mention !== null &&
+        next !== null &&
+        (mention.start !== next.start || mention.query !== next.query));
+    setMention(next);
+    if (mentionChanged) setActiveIndex(0);
   }
 
   function insertMention(character: CharacterCard) {
@@ -78,6 +74,7 @@ export function Composer({ characters, onSend }: ComposerProps) {
     const next = `${before}@${character.name} ${after}`;
     setText(next);
     setMention(null);
+    setActiveIndex(0);
     requestAnimationFrame(() => {
       const pos = before.length + character.name.length + 2;
       el?.focus();
@@ -91,33 +88,43 @@ export function Composer({ characters, onSend }: ComposerProps) {
     onSend(trimmed);
     setText("");
     setMention(null);
+    setActiveIndex(0);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+
     if (mention && filtered.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setActiveIndex((i) => (i + 1) % filtered.length);
+        setActiveIndex((i) => {
+          const cur = Math.min(i, filtered.length - 1);
+          return (cur + 1) % filtered.length;
+        });
         return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setActiveIndex((i) => (i - 1 + filtered.length) % filtered.length);
+        setActiveIndex((i) => {
+          const cur = Math.min(i, filtered.length - 1);
+          return (cur - 1 + filtered.length) % filtered.length;
+        });
         return;
       }
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        insertMention(filtered[activeIndex]);
+        insertMention(filtered[safeIndex]);
         return;
       }
       if (e.key === "Tab") {
         e.preventDefault();
-        insertMention(filtered[activeIndex]);
+        insertMention(filtered[safeIndex]);
         return;
       }
       if (e.key === "Escape") {
         e.preventDefault();
         setMention(null);
+        setActiveIndex(0);
         return;
       }
     }
@@ -135,10 +142,13 @@ export function Composer({ characters, onSend }: ComposerProps) {
           <MentionPicker
             characters={characters}
             query={mention.query}
-            activeIndex={activeIndex}
+            activeIndex={safeIndex}
             onActiveIndexChange={setActiveIndex}
             onSelect={insertMention}
-            onClose={() => setMention(null)}
+            onClose={() => {
+              setMention(null);
+              setActiveIndex(0);
+            }}
           />
         ) : null}
         <div className="flex items-end gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
@@ -151,7 +161,15 @@ export function Composer({ characters, onSend }: ComposerProps) {
             onKeyDown={onKeyDown}
             onClick={() => {
               const caret = textareaRef.current?.selectionStart ?? text.length;
-              detectMention(text, caret);
+              const next = parseMention(text, caret);
+              const mentionChanged =
+                (mention === null) !== (next === null) ||
+                (mention !== null &&
+                  next !== null &&
+                  (mention.start !== next.start ||
+                    mention.query !== next.query));
+              setMention(next);
+              if (mentionChanged) setActiveIndex(0);
             }}
             className="max-h-[140px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-6 text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           />

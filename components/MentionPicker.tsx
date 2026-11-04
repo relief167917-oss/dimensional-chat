@@ -75,9 +75,12 @@ export function MentionPicker({
                 onMouseEnter={() => onActiveIndexChange(index)}
                 onClick={() => onSelect(c)}
               >
-                <span className="text-lg" aria-hidden>
-                  {c.avatar}
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element -- static export avatar */}
+                <img
+                  src={c.avatar}
+                  alt=""
+                  className="h-7 w-7 rounded-full object-cover"
+                />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {c.name}

@@ -58,7 +58,7 @@ export function ChatHeader({
                   title={m.name}
                 >
                   <Avatar
-                    emoji={m.avatar}
+                    src={m.avatar}
                     size="sm"
                     title={m.name}
                     className="ring-2 ring-white transition hover:brightness-95 dark:ring-neutral-950"
@@ -88,7 +88,7 @@ export function ChatHeader({
                             onSelectCharacter(m);
                           }}
                         >
-                          <span aria-hidden>{m.avatar}</span>
+                          <Avatar src={m.avatar} size="sm" title={m.name} />
                           <span className="truncate text-neutral-800 dark:text-neutral-100">
                             {m.name}
                           </span>

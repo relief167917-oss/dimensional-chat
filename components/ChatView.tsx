@@ -39,7 +39,9 @@ function isNearBottom(el: HTMLElement): boolean {
 }
 
 export function ChatView() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() =>
+    withTypingDemo(demoMessages, Date.now()),
+  );
   const [now, setNow] = useState(() => Date.now());
   const [stuckToBottom, setStuckToBottom] = useState(true);
   const [unreadSinceId, setUnreadSinceId] = useState<string | null>(null);
@@ -52,10 +54,6 @@ export function ChatView() {
   const stuckRef = useRef(true);
   const visibleIdsRef = useRef<Set<string>>(new Set());
   const prevVisibleLenRef = useRef(0);
-
-  useEffect(() => {
-    setMessages(withTypingDemo(demoMessages, Date.now()));
-  }, []);
 
   useEffect(() => {
     stuckRef.current = stuckToBottom;

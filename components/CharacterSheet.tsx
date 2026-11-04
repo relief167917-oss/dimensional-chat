@@ -41,12 +41,12 @@ export function CharacterSheet({ character, onClose }: CharacterSheetProps) {
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-neutral-200 dark:bg-neutral-700 sm:hidden" />
         <div className="flex items-start gap-3">
-          <span
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-3xl ring-1 ring-neutral-200 dark:bg-neutral-800 dark:ring-neutral-700"
-            aria-hidden
-          >
-            {character.avatar}
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static export avatar */}
+          <img
+            src={character.avatar}
+            alt={character.name}
+            className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-neutral-200 dark:ring-neutral-700"
+          />
           <div className="min-w-0 flex-1">
             <h2
               id="character-sheet-title"

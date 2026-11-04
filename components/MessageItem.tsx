@@ -75,7 +75,7 @@ export function MessageItem({
 
   const isOwner = message.senderType === "owner";
   const name = isOwner ? ownerNickname : (character?.name ?? "未知");
-  const avatar = isOwner ? "👑" : (character?.avatar ?? "❔");
+  const avatarSrc = isOwner ? "👑" : (character?.avatar ?? "❔");
 
   return (
     <>
@@ -90,10 +90,10 @@ export function MessageItem({
             className="shrink-0 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-label={`查看 ${name}`}
           >
-            <Avatar emoji={avatar} size="md" title={name} />
+            <Avatar src={avatarSrc} size="md" title={name} />
           </button>
         ) : (
-          <Avatar emoji={avatar} size="md" title={name} />
+          <Avatar src={avatarSrc} size="md" title={name} />
         )}
         <div
           className={`min-w-0 max-w-[78%] flex-1 ${isOwner ? "items-end" : ""}`}

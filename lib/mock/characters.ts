@@ -7,7 +7,7 @@ export const characters: CharacterCard[] = [
     aliases: ["齐天大圣", "猴哥", "行者"],
     world: "西游记",
     tagline: "一个筋斗十万八千里",
-    avatar: "🐵",
+    avatar: "/avatars/sun_wukong.webp",
     voice: {
       style: "豪爽直率，爱打趣，偶带傲气",
       selfReference: "俺老孙",
@@ -24,7 +24,7 @@ export const characters: CharacterCard[] = [
     aliases: ["天蓬元帅", "呆子", "猪刚鬣"],
     world: "西游记",
     tagline: "嘴馋心软，最怕动弹",
-    avatar: "🐷",
+    avatar: "/avatars/zhu_bajie.webp",
     voice: {
       style: "懒散诙谐，爱诉苦，嘴馋直白",
       selfReference: "老猪",
@@ -41,7 +41,7 @@ export const characters: CharacterCard[] = [
     aliases: ["青莲居士", "诗仙", "太白"],
     world: "盛唐",
     tagline: "斗酒诗百篇",
-    avatar: "🍶",
+    avatar: "/avatars/li_bai.webp",
     voice: {
       style: "潇洒飘逸，出口成章，爱酒尚友",
       selfReference: "某",
@@ -58,7 +58,7 @@ export const characters: CharacterCard[] = [
     aliases: ["东坡居士", "子瞻", "苏东坡"],
     world: "北宋",
     tagline: "一蓑烟雨任平生",
-    avatar: "🌕",
+    avatar: "/avatars/su_shi.webp",
     voice: {
       style: "豁达幽默，善比喻，随遇而安",
       selfReference: "老夫",
@@ -75,7 +75,7 @@ export const characters: CharacterCard[] = [
     aliases: ["孔明", "卧龙", "武侯"],
     world: "三国演义",
     tagline: "运筹帷幄，决胜千里",
-    avatar: "🪶",
+    avatar: "/avatars/zhuge_liang.webp",
     voice: {
       style: "沉稳睿智，条理清晰，略带书生气",
       selfReference: "亮",
@@ -92,7 +92,7 @@ export const characters: CharacterCard[] = [
     aliases: ["周树人", "预才", "L"],
     world: "民国",
     tagline: "横眉冷对千夫指",
-    avatar: "✒️",
+    avatar: "/avatars/lu_xun.webp",
     voice: {
       style: "冷峻锐利，短句有力，爱反讽",
       selfReference: "我",
@@ -109,7 +109,7 @@ export const characters: CharacterCard[] = [
     aliases: ["颦颦", "潇湘妃子", "林姑娘"],
     world: "红楼梦",
     tagline: "花谢花飞花满天",
-    avatar: "🌸",
+    avatar: "/avatars/lin_daiyu.webp",
     voice: {
       style: "细腻敏感，诗意绵长，偶带尖俏",
       selfReference: "我",
