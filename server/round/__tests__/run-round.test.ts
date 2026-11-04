@@ -6,6 +6,7 @@ import { isOOC, cleanIntent } from '../ooc.js';
 import type { Message, DirectorPlan } from '../../../lib/types.js';
 import type { RoundInput, RoundOutput } from '../types.js';
 import { fillTemplate } from '../../prompts/index.js';
+import { LLMError } from '../../llm/index.js';
 
 const turn = (speaker = 'sun_wukong', replyTo = 'owner-1') => ({ speaker, replyTo, intent: '用自己的经历调侃拖延', tone: '调侃', length: 'short' as const });
 const plan = (turns: DirectorPlan['turns'] = [turn()]): DirectorPlan => ({ skip: false, topicKeywords: ['减肥'], turns });
@@ -103,8 +104,13 @@ it('仍出戏就丢弃；第二人不引用被丢弃的台词', async () => {
   expect(output.warnings.join('')).toContain('已丢弃');
 });
 
-it.each(['AI', '人工智能', '语言模型', '模型', '助手', '人设', '提示词', 'PROMPT', '设定', '角色扮演', '扮演', '作为一个'])('过滤出戏词：%s', (word) => {
+it.each(['AI', '人工智能', '语言模型', 'AI模型', 'AI助手', '人设', '提示词', 'PROMPT', '设定上', '角色扮演', '我在扮演'])('过滤出戏词：%s', (word) => {
   expect(isOOC(word)).toBe(true); expect(isOOC(cleanIntent(word))).toBe(false);
+});
+
+it.each(['设定计划', '扮演好自己的角色', '做一个船只模型', '请孔明做助手', '作为一个诗人'])('正常用语不被误判或清洗：%s', (text) => {
+  expect(isOOC(text)).toBe(false);
+  expect(cleanIntent(text)).toBe(text);
 });
 
 it('只使用传入历史的最后20条，不构造假历史', async () => {
@@ -135,16 +141,56 @@ it('普通LLM错误向上抛安全LLMError', async () => {
   await expect(runRound(input())).rejects.toMatchObject({ code: 'CLIENT_ERROR' });
 });
 
-it('Retry-After等待超出整轮预算时返回空的部分结果，等待统计不会丢失', async () => {
+it('第二位speaker限流重试耗尽后，返回已有一条回复和一条安全warning', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
+  const fetchMock = mockCalls(plan([turn(), turn('zhu_bajie', 'turn:0')]), { text: '俺老孙来监督。' });
+  fetchMock.mockImplementation(async () => Response.json({ error: { code: '1305', message: 'round-test-key 原始响应' } }, { status: 429 }));
+  const pending = runRound(input()).catch((error: unknown) => error);
+  await vi.advanceTimersByTimeAsync(5500);
+  const output = await pending as RoundOutput;
+  expect(output).not.toBeInstanceOf(LLMError);
+  expect(fetchMock).toHaveBeenCalledTimes(5);
+  expect(output.replies).toHaveLength(1);
+  expect(output.replies[0]).toMatchObject({ senderId: 'sun_wukong', text: '俺老孙来监督。', replyTo: 'owner-1' });
+  expect(Date.parse(output.replies[0].deliverAt)).toBeGreaterThan(Date.parse(output.replies[0].createdAt));
+  expect(output.warnings).toHaveLength(1);
+  expect(output.warnings[0]).toContain('RATE_LIMIT');
+  expect(output.warnings[0]).not.toMatch(/round-test-key|原始响应/);
+  expect(output.timings.speakersMs).toHaveLength(2);
+  expect(output.timings.retryWaitMs).toBe(5500);
+});
+
+it('第二位speaker的不可重试LLMError同样保留已有回复', async () => {
+  const fetchMock = mockCalls(plan([turn(), turn('zhu_bajie', 'turn:0')]), { text: '俺来。' });
+  fetchMock.mockResolvedValueOnce(Response.json({ error: {} }, { status: 401 }));
+  const output = await runRound(input());
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  expect(output.replies).toHaveLength(1);
+  expect(output.warnings).toEqual([expect.stringContaining('CLIENT_ERROR')]);
+});
+
+it('第一位speaker失败且没有回复时仍抛LLMError', async () => {
+  const fetchMock = mockCalls(plan());
+  fetchMock.mockResolvedValueOnce(Response.json({ error: {} }, { status: 401 }));
+  await expect(runRound(input())).rejects.toMatchObject({ code: 'CLIENT_ERROR' });
+});
+
+it('已有回复时普通程序错误仍抛出，不误当作模型部分失败', async () => {
+  const failure = new Error('unexpected programming error');
+  const call = vi.fn().mockResolvedValueOnce({ text: JSON.stringify(plan([turn(), turn('zhu_bajie', 'turn:0')])), usage: null, provider: 'mock', latencyMs: 0 })
+    .mockResolvedValueOnce({ text: '{"text":"俺来。"}', usage: null, provider: 'mock', latencyMs: 0 }).mockRejectedValueOnce(failure);
+  await expect(runRound(input(), { call })).rejects.toBe(failure);
+});
+
+it('导演在Retry-After等待中耗尽预算且无回复时仍抛LLMError', async () => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
   const fetchMock = vi.fn().mockImplementation(async () => new Response('', { status: 429, headers: { 'Retry-After': '120' } }));
   vi.stubGlobal('fetch', fetchMock);
-  const pending = runRound(input());
+  const pending = runRound(input()).catch((error: unknown) => error);
   await vi.advanceTimersByTimeAsync(45_000);
   const output = await pending;
-  expect(output.replies).toEqual([]);
-  expect(output.timings.totalMs).toBe(45_000);
-  expect(output.timings.retryWaitMs).toBe(45_000);
+  expect(output).toBeInstanceOf(LLMError);
+  expect(output).toMatchObject({ code: 'ABORTED' });
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
