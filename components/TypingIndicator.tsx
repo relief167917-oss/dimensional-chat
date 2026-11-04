@@ -1,12 +1,15 @@
 type TypingIndicatorProps = {
   names: string[];
+  /** 导演未定人选时显示「有人正在输入」 */
+  waiting?: boolean;
 };
 
-export function TypingIndicator({ names }: TypingIndicatorProps) {
-  if (names.length === 0) return null;
+export function TypingIndicator({ names, waiting = false }: TypingIndicatorProps) {
+  if (!waiting && names.length === 0) return null;
 
-  const label =
-    names.length === 1
+  const label = waiting
+    ? "有人正在输入"
+    : names.length === 1
       ? `${names[0]} 正在输入`
       : names.length === 2
         ? `${names[0]}、${names[1]} 正在输入`

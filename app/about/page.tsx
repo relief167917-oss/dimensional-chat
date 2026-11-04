@@ -32,7 +32,23 @@ export default function AboutPage() {
           扮演的历史、文学角色一起聊天。首批角色包括孙悟空、猪八戒、李白、苏轼、诸葛亮、鲁迅、林黛玉——大家围坐一桌，接梗、抬杠、偶尔认真。
         </p>
         <p className="mt-4 text-[15px] leading-7 text-neutral-600 dark:text-neutral-300">
-          当前版本为静态 UI 演示，消息均为本地 mock，不连接任何后端或大模型。后续会逐步接入角色导演与真实对话能力。
+          当前版本已接入本地导演轮次（
+          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+            POST /api/round
+          </code>
+          ）。请用
+          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+            pnpm dev
+          </code>
+          运行，并在根目录
+          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+            .env.local
+          </code>
+          配置
+          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+            ZHIPU_API_KEY
+          </code>
+          。消息保存在浏览器 localStorage。
         </p>
 
         <div className="mt-10 border-t border-neutral-200 pt-6 dark:border-neutral-800">

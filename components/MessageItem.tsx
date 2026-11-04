@@ -10,6 +10,7 @@ type MessageItemProps = {
   characters: CharacterCard[];
   showUnreadSeparator?: boolean;
   onAvatarClick?: (character: CharacterCard) => void;
+  onRetry?: () => void;
 };
 
 function formatTime(iso: string): string {
@@ -61,13 +62,23 @@ export function MessageItem({
   characters,
   showUnreadSeparator = false,
   onAvatarClick,
+  onRetry,
 }: MessageItemProps) {
   if (message.senderType === "system") {
     return (
       <>
         {showUnreadSeparator ? <UnreadSeparator /> : null}
-        <div className="px-4 py-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
-          {message.text}
+        <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
+          <span>{message.text}</span>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-md border border-neutral-200 px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              重试
+            </button>
+          ) : null}
         </div>
       </>
     );

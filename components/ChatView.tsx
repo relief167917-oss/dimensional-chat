@@ -11,11 +11,27 @@ import {
   characters,
   demoGroup,
   demoMessages,
-  withTypingDemo,
 } from "@/lib/mock";
-import type { CharacterCard, Message } from "@/lib/types";
+import { loadMessages, saveMessages } from "@/lib/storage";
+import type { CharacterCard, DirectorPlan, Message } from "@/lib/types";
 
 const NEAR_BOTTOM_PX = 80;
+
+type RoundSuccess = {
+  plan: DirectorPlan;
+  replies: Message[];
+  timings: {
+    directorMs: number;
+    speakersMs: number[];
+    retryWaitMs: number;
+    totalMs: number;
+  };
+  warnings: string[];
+};
+
+type RoundErrorBody = {
+  error?: { code?: string; message?: string };
+};
 
 function replyPreviewFor(
   messages: Message[],
@@ -38,22 +54,74 @@ function isNearBottom(el: HTMLElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
 }
 
+function newId(prefix: string): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function friendlyErrorText(code?: string, fallback?: string): string {
+  if (code === "RATE_LIMIT") return "大家都在忙，喘口气再说";
+  if (code === "TIMEOUT" || code === "ABORTED") return "茶凉了，再说一次试试";
+  if (fallback?.trim()) return fallback;
+  return "茶话会暂时冷场了，稍后再试";
+}
+
+function makeSystemMessage(text: string): Message {
+  const stamp = new Date().toISOString();
+  return {
+    id: newId("sys"),
+    groupId: demoGroup.id,
+    senderType: "system",
+    senderId: "system",
+    text,
+    replyTo: null,
+    createdAt: stamp,
+    deliverAt: stamp,
+  };
+}
+
 export function ChatView() {
-  const [messages, setMessages] = useState<Message[]>(() =>
-    withTypingDemo(demoMessages, Date.now()),
-  );
+  const [hydrated, setHydrated] = useState(false);
+  const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [now, setNow] = useState(() => Date.now());
   const [stuckToBottom, setStuckToBottom] = useState(true);
   const [unreadSinceId, setUnreadSinceId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedCharacter, setSelectedCharacter] =
     useState<CharacterCard | null>(null);
+  const [roundPending, setRoundPending] = useState(false);
+  const [retryOwnerId, setRetryOwnerId] = useState<string | null>(null);
+  const [retryErrorId, setRetryErrorId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stuckRef = useRef(true);
   const visibleIdsRef = useRef<Set<string>>(new Set());
   const prevVisibleLenRef = useRef(0);
+  const messagesRef = useRef(messages);
+  const inflightRef = useRef(false);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    // Client-only hydrate from localStorage (avoid SSR mismatch).
+    const frame = requestAnimationFrame(() => {
+      const stored = loadMessages(demoGroup.id);
+      setMessages(stored && stored.length > 0 ? stored : demoMessages);
+      setNow(Date.now());
+      setHydrated(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveMessages(demoGroup.id, messages);
+  }, [messages, hydrated]);
 
   useEffect(() => {
     stuckRef.current = stuckToBottom;
@@ -102,7 +170,6 @@ export function ChatView() {
     setUnreadCount(0);
   }, []);
 
-  // Track newly delivered messages while scrolled up
   useEffect(() => {
     const prevIds = visibleIdsRef.current;
     const nextIds = new Set(visible.map((m) => m.id));
@@ -126,12 +193,11 @@ export function ChatView() {
     prevVisibleLenRef.current = visible.length;
   }, [visible, scrollToLatest]);
 
-  // Keep stickiness for typing indicator changes when already at bottom
   useEffect(() => {
     if (stuckRef.current) {
       requestAnimationFrame(() => scrollToLatest(true));
     }
-  }, [typingNames.length, scrollToLatest]);
+  }, [typingNames.length, roundPending, scrollToLatest]);
 
   function handleScroll() {
     const el = scrollRef.current;
@@ -145,10 +211,75 @@ export function ChatView() {
     }
   }
 
+  const runRoundRequest = useCallback(
+    async (ownerMessage: Message, history: Message[]) => {
+      if (inflightRef.current) return;
+      inflightRef.current = true;
+      setRoundPending(true);
+      setRetryOwnerId(null);
+      setRetryErrorId(null);
+
+      try {
+        const res = await fetch("/api/round", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            group: {
+              id: demoGroup.id,
+              name: demoGroup.name,
+              ownerNickname: demoGroup.ownerNickname,
+              memberIds: demoGroup.memberIds,
+            },
+            history,
+            ownerMessage,
+          }),
+        });
+
+        const data = (await res.json()) as RoundSuccess & RoundErrorBody;
+
+        if (!res.ok) {
+          const text = friendlyErrorText(data.error?.code, data.error?.message);
+          const errMsg = makeSystemMessage(text);
+          setMessages((prev) => [...prev, errMsg]);
+          setRetryOwnerId(ownerMessage.id);
+          setRetryErrorId(errMsg.id);
+          setNow(Date.now());
+          return;
+        }
+
+        console.log("[round] timings", data.timings);
+        if (data.warnings?.length) {
+          console.log("[round] warnings", data.warnings);
+        }
+
+        if (data.plan?.skip || !data.replies?.length) {
+          const skipMsg = makeSystemMessage("群里没人接话");
+          setMessages((prev) => [...prev, skipMsg]);
+          setNow(Date.now());
+          return;
+        }
+
+        setMessages((prev) => [...prev, ...data.replies]);
+        setNow(Date.now());
+      } catch {
+        const errMsg = makeSystemMessage(friendlyErrorText("NETWORK_ERROR"));
+        setMessages((prev) => [...prev, errMsg]);
+        setRetryOwnerId(ownerMessage.id);
+        setRetryErrorId(errMsg.id);
+        setNow(Date.now());
+      } finally {
+        inflightRef.current = false;
+        setRoundPending(false);
+      }
+    },
+    [],
+  );
+
   function handleSend(text: string) {
+    if (inflightRef.current) return;
     const stamp = new Date().toISOString();
-    const next: Message = {
-      id: `local-${Date.now()}`,
+    const ownerMessage: Message = {
+      id: newId("local"),
       groupId: demoGroup.id,
       senderType: "owner",
       senderId: "owner",
@@ -157,13 +288,39 @@ export function ChatView() {
       createdAt: stamp,
       deliverAt: stamp,
     };
-    setMessages((prev) => [...prev, next]);
+    const history = messagesRef.current;
+    setMessages((prev) => [...prev, ownerMessage]);
     setNow(Date.now());
-    // Own sends always jump to latest
     requestAnimationFrame(() => scrollToLatest(true));
+    void runRoundRequest(ownerMessage, history);
+  }
+
+  function handleRetry() {
+    if (!retryOwnerId || inflightRef.current) return;
+    const ownerMessage = messagesRef.current.find((m) => m.id === retryOwnerId);
+    if (!ownerMessage) return;
+    const errorId = retryErrorId;
+    const history = messagesRef.current.filter(
+      (m) => m.id !== ownerMessage.id && m.id !== errorId,
+    );
+    if (errorId) {
+      setMessages((prev) => prev.filter((m) => m.id !== errorId));
+    }
+    setRetryOwnerId(null);
+    setRetryErrorId(null);
+    void runRoundRequest(ownerMessage, history);
+  }
+
+  function handleClearChat() {
+    setMessages(demoMessages);
+    setRetryOwnerId(null);
+    setRetryErrorId(null);
+    setNow(Date.now());
+    requestAnimationFrame(() => scrollToLatest(false));
   }
 
   const showJump = !stuckToBottom && (unreadCount > 0 || visible.length > 0);
+  const waitingAnonymous = roundPending && typingNames.length === 0;
 
   return (
     <div className="relative flex h-dvh flex-col bg-white dark:bg-neutral-950">
@@ -171,6 +328,7 @@ export function ChatView() {
         groupName={demoGroup.name}
         members={characters}
         onSelectCharacter={setSelectedCharacter}
+        onClearChat={handleClearChat}
       />
 
       <div className="relative mx-auto flex min-h-0 w-full max-w-[600px] flex-1 flex-col">
@@ -194,9 +352,15 @@ export function ChatView() {
                 characters={characters}
                 showUnreadSeparator={message.id === unreadSinceId}
                 onAvatarClick={setSelectedCharacter}
+                onRetry={
+                  message.id === retryErrorId ? handleRetry : undefined
+                }
               />
             ))}
-            <TypingIndicator names={typingNames} />
+            <TypingIndicator
+              names={typingNames}
+              waiting={waitingAnonymous}
+            />
             <div ref={bottomRef} className="h-2" />
           </div>
         </div>
@@ -231,7 +395,11 @@ export function ChatView() {
         ) : null}
       </div>
 
-      <Composer characters={characters} onSend={handleSend} />
+      <Composer
+        characters={characters}
+        onSend={handleSend}
+        disabled={roundPending}
+      />
 
       <CharacterSheet
         character={selectedCharacter}

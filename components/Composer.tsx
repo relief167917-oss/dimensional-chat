@@ -14,6 +14,7 @@ import type { CharacterCard } from "@/lib/types";
 type ComposerProps = {
   characters: CharacterCard[];
   onSend: (text: string) => void;
+  disabled?: boolean;
 };
 
 type MentionState = {
@@ -21,7 +22,7 @@ type MentionState = {
   query: string;
 } | null;
 
-export function Composer({ characters, onSend }: ComposerProps) {
+export function Composer({ characters, onSend, disabled = false }: ComposerProps) {
   const [text, setText] = useState("");
   const [mention, setMention] = useState<MentionState>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -83,6 +84,7 @@ export function Composer({ characters, onSend }: ComposerProps) {
   }
 
   function submit() {
+    if (disabled) return;
     const trimmed = text.trim();
     if (!trimmed) return;
     onSend(trimmed);
@@ -156,7 +158,10 @@ export function Composer({ characters, onSend }: ComposerProps) {
             ref={textareaRef}
             value={text}
             rows={1}
-            placeholder="说点什么… 输入 @ 提及角色"
+            placeholder={
+              disabled ? "等待回复中…" : "说点什么… 输入 @ 提及角色"
+            }
+            disabled={disabled}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={onKeyDown}
             onClick={() => {
@@ -171,12 +176,12 @@ export function Composer({ characters, onSend }: ComposerProps) {
               setMention(next);
               if (mentionChanged) setActiveIndex(0);
             }}
-            className="max-h-[140px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-6 text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+            className="max-h-[140px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-6 text-neutral-900 outline-none placeholder:text-neutral-400 disabled:opacity-60 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           />
           <button
             type="button"
             onClick={submit}
-            disabled={!text.trim()}
+            disabled={disabled || !text.trim()}
             aria-label="发送"
             className="mb-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
