@@ -1,4 +1,4 @@
-const words = ['人工智能', '语言模型', '角色扮演', '作为一个', '提示词', '模型', '助手', '人设', '设定', '扮演'];
+const words = ['人工智能', '语言模型', 'AI模型', 'AI助手', '角色扮演', '我在扮演', '人设', '设定上', '提示词'];
 const pattern = () => new RegExp(`${words.join('|')}|\\b(?:AI|prompt)\\b`, 'giu');
 
 export function isOOC(text: string): boolean {

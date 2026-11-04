@@ -144,8 +144,10 @@ export async function runRound(input: RoundInput, deps?: { call?: typeof callLLM
       } finally { timings.speakersMs.push(Math.round(performance.now() - speakerStarted)); }
     }
   } catch (error) {
-    if (!controller.signal.aborted) throw error;
-    warnings.push('整轮达到45秒预算，已停止后续请求并返回已生成的部分。');
+    if (!(error instanceof LLMError) || replies.length === 0) throw error;
+    warnings.push(controller.signal.aborted
+      ? '整轮达到45秒预算，已停止后续请求并返回已生成的部分。'
+      : `后续角色发言暂时失败（${error.code}），已保留本轮生成的回复。`);
   } finally { clearTimeout(budgetTimer); timings.totalMs = Math.round(performance.now() - started); }
   let deliverAt = Date.now() + 1200;
   for (const reply of replies) {
