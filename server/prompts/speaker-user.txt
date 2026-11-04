@@ -1,4 +1,0 @@
-【最近消息】{{recent_messages}}
-【你要回应】[{{reply_to_id}}] {{reply_to_speaker}}：{{reply_to_text}}
-【这一句你想表达】{{intent}}（语气：{{tone}}）
-只输出 JSON：{"text": "你的发言"}

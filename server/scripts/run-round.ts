@@ -1,7 +1,9 @@
 import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
-import { LLMError } from '../llm/index.js';
-import { runRound } from './round.js';
+import { randomUUID } from 'node:crypto';
+import { loadCharacters } from '../characters/index.js';
+import { callLLM, LLMError } from '../llm/index.js';
+import { runRound } from '../round/index.js';
 
 config({ path: fileURLToPath(new URL('../.env', import.meta.url)), quiet: true });
 
@@ -10,7 +12,7 @@ class ArgumentError extends Error {}
 async function main() {
   const args = process.argv.slice(2);
   if (args.includes('--help')) {
-    console.log('用法：pnpm round ["群主的一句话"] [--times N]\n默认：我决定从明天开始减肥，谁来监督我？\n每一轮使用相同的四条假历史消息，所有调用串行执行。');
+    console.log('用法：pnpm round ["群主的一句话"] [--times N]\n默认：我决定从明天开始减肥，谁来监督我？\n每轮使用空历史，所有模型调用串行执行，整轮预算45秒。');
     return;
   }
   let times = 1;
@@ -38,7 +40,44 @@ async function main() {
   const message = words.join(' ').trim() || '我决定从明天开始减肥，谁来监督我？';
   for (let index = 0; index < times; index++) {
     console.log(`\n=== 第 ${index + 1}/${times} 轮 ===`);
-    await runRound(message);
+    const roundStarted = performance.now();
+    try {
+      const now = new Date().toISOString();
+      const characters = loadCharacters();
+      const output = await runRound({
+        group: { id: 'cli-demo', name: '跨次元茶话会', ownerNickname: '群主', memberIds: characters.map((item) => item.id) },
+        history: [],
+        ownerMessage: { id: randomUUID(), groupId: 'cli-demo', senderType: 'owner', senderId: 'owner', text: message, replyTo: null, createdAt: now, deliverAt: now },
+      }, { call: async (messages, options = {}) => {
+        const label = messages[0].content.startsWith('你就是') ? `speaker:${messages[0].content.split('，')[0].slice(3)}` : 'director';
+        const callStarted = performance.now();
+        let result;
+        try { result = await callLLM(messages, { ...options, onRetry: (event) => {
+          console.log(`[retry] ${label} 第${event.attempt}次退避 ${event.waitMs}ms code=${event.code}`);
+          options.onRetry?.(event);
+        } }); } catch (error) {
+          console.log(`[${label}] 调用失败 耗时=${Math.round(performance.now() - callStarted)}ms tokens=未知 code=${error instanceof LLMError ? error.code : 'UNKNOWN'}`);
+          throw error;
+        }
+        const usage = result.usage;
+        console.log(`[${label}] provider=${result.provider} 耗时=${result.latencyMs}ms tokens=${usage ? `输入:${usage.promptTokens} 输出:${usage.completionTokens} 总计:${usage.totalTokens}` : '未知'}`);
+        return result;
+      } });
+      console.log(`导演 JSON：\n${JSON.stringify(output.plan, null, 2)}`);
+      for (const reply of output.replies) {
+        console.log(`${characters.find((item) => item.id === reply.senderId)!.name} → 回复[${reply.replyTo}]：${reply.text}`);
+      }
+      if (output.plan.skip) console.log(`本轮跳过：${output.plan.skipReason || '暂不接话'}`);
+      for (const warning of output.warnings) console.error(`提示：${warning}`);
+      console.log(`timings：${JSON.stringify(output.timings)}`);
+      console.log(`本轮总耗时：${output.timings.totalMs}ms`);
+    } catch (error) {
+      if (!(error instanceof LLMError)) throw error;
+      console.error(`错误[${error.code}]：${error.message}`);
+      console.log(`本轮总耗时：${Math.round(performance.now() - roundStarted)}ms`);
+      process.exitCode = 1;
+      if (!error.retryable) break;
+    }
   }
 }
 

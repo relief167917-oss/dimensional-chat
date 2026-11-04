@@ -8,6 +8,8 @@ export interface ChatOptions {
   maxTokens?: number;
   jsonMode?: boolean;
   timeoutMs?: number;
+  signal?: AbortSignal;
+  onRetry?: (event: { attempt: number; waitMs: number; code: LLMErrorCode }) => void;
 }
 
 export interface TokenUsage {
@@ -38,7 +40,8 @@ export type LLMErrorCode =
   | 'NETWORK_ERROR'
   | 'EMPTY_RESPONSE'
   | 'INVALID_RESPONSE'
-  | 'NO_PROVIDER';
+  | 'NO_PROVIDER'
+  | 'ABORTED';
 
 // 只接收本地定义的安全文案；不附带请求头、响应体或原始异常 cause。
 export class LLMError extends Error {
@@ -49,6 +52,7 @@ export class LLMError extends Error {
     message: string,
     readonly retryable = false,
     readonly status?: number,
+    readonly retryAfterMs?: number,
   ) {
     super(message);
   }

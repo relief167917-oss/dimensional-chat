@@ -13,7 +13,7 @@ it('CLI --times 2 独立连跑两轮，并打印导演、台词、用量和两�
   expect(output).toContain('第 2/2 轮');
   expect(output.match(/导演 JSON/g)).toHaveLength(2);
   expect(output.match(/本轮总耗时/g)).toHaveLength(2);
-  expect(output).toContain('猪八戒 → 回复[turn:0]');
+  expect(output).toMatch(/猪八戒 → 回复\[(?!turn:0)[^\]]+\]/);
   expect(output).toContain('tokens=输入:100 输出:20 总计:120');
   expect(output).not.toContain('cli-test-key');
 });
