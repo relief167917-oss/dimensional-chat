@@ -2,11 +2,13 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
 } from "react";
 import { MentionPicker } from "@/components/MentionPicker";
+import { filterCharacters } from "@/lib/mentions";
 import type { CharacterCard } from "@/lib/types";
 
 type ComposerProps = {
@@ -22,7 +24,13 @@ type MentionState = {
 export function Composer({ characters, onSend }: ComposerProps) {
   const [text, setText] = useState("");
   const [mention, setMention] = useState<MentionState>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const filtered = useMemo(
+    () => (mention ? filterCharacters(characters, mention.query) : []),
+    [characters, mention],
+  );
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -30,6 +38,17 @@ export function Composer({ characters, onSend }: ComposerProps) {
     el.style.height = "0px";
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
   }, [text]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [mention?.query, mention?.start]);
+
+  useEffect(() => {
+    if (filtered.length === 0) return;
+    if (activeIndex >= filtered.length) {
+      setActiveIndex(filtered.length - 1);
+    }
+  }, [filtered.length, activeIndex]);
 
   function detectMention(value: string, caret: number) {
     const before = value.slice(0, caret);
@@ -75,22 +94,49 @@ export function Composer({ characters, onSend }: ComposerProps) {
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (mention && filtered.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((i) => (i + 1) % filtered.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((i) => (i - 1 + filtered.length) % filtered.length);
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        insertMention(filtered[activeIndex]);
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        insertMention(filtered[activeIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMention(null);
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
-    if (e.key === "Escape" && mention) {
-      setMention(null);
-    }
   }
 
   return (
-    <div className="sticky bottom-0 border-t border-neutral-200/80 bg-white/95 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/95">
+    <div className="shrink-0 border-t border-neutral-200/80 bg-white/95 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/95">
       <div className="relative mx-auto max-w-[600px] px-3 py-3">
-        {mention ? (
+        {mention && filtered.length > 0 ? (
           <MentionPicker
             characters={characters}
             query={mention.query}
+            activeIndex={activeIndex}
+            onActiveIndexChange={setActiveIndex}
             onSelect={insertMention}
             onClose={() => setMention(null)}
           />
@@ -133,7 +179,7 @@ export function Composer({ characters, onSend }: ComposerProps) {
           </button>
         </div>
         <p className="mt-1.5 px-1 text-[11px] text-neutral-400 dark:text-neutral-500">
-          Enter 发送 · Shift+Enter 换行
+          Enter 发送 · Shift+Enter 换行 · @ 后可用方向键选择
         </p>
       </div>
     </div>

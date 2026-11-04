@@ -59,3 +59,18 @@ body {
 .typing-dot:nth-child(3) {
   animation-delay: 0.3s;
 }
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 0.22s ease-out;
+}
