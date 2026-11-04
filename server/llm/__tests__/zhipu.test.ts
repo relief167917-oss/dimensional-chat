@@ -12,32 +12,34 @@ const success = () => Response.json({
 describe('ZhipuProvider', () => {
   beforeEach(() => {
     vi.stubEnv('ZHIPU_API_KEY', fakeKey);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
+    vi.spyOn(Math, 'random').mockReturnValue(0);
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
-  it('默认每次 20 秒超时；在 1 秒、2 秒退避后最多再试两次', async () => {
+  it('默认每次15秒超时；在1.5秒、4秒退避后最多再试两次', async () => {
     const fetchMock = vi.fn((_url, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init.signal!.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
     }));
     vi.stubGlobal('fetch', fetchMock);
     const pending = new ZhipuProvider().chat(messages).catch((error) => error);
-    await vi.advanceTimersByTimeAsync(63_000);
+    await vi.advanceTimersByTimeAsync(50_500);
     const error = await pending;
     expect(error).toBeInstanceOf(LLMError);
     expect(error.code).toBe('TIMEOUT');
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it('429 后等待 1 秒重试成功，锁定免费型号并关闭思考', async () => {
+  it('429 后等待1.5秒重试成功，锁定免费型号并关闭思考', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(new Response('限流', { status: 429 })).mockResolvedValueOnce(success());
     vi.stubGlobal('fetch', fetchMock);
     const pending = new ZhipuProvider().chat(messages, { jsonMode: true, temperature: 0.95, maxTokens: 123 });
-    await vi.advanceTimersByTimeAsync(999);
+    await vi.advanceTimersByTimeAsync(1499);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
     const result = await pending;
@@ -51,7 +53,7 @@ describe('ZhipuProvider', () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(Response.json({ error: { code: '1302' } }, { status: 400 })).mockResolvedValueOnce(success());
     vi.stubGlobal('fetch', fetchMock);
     const pending = new ZhipuProvider().chat(messages);
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1500);
     await expect(pending).resolves.toHaveProperty('text', '{"text":"你好"}');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -60,7 +62,7 @@ describe('ZhipuProvider', () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response('Bad gateway', { status: 502 }));
     vi.stubGlobal('fetch', fetchMock);
     const pending = new ZhipuProvider().chat(messages).catch((error) => error);
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(5500);
     expect(await pending).toMatchObject({ code: 'SERVER_ERROR', retryable: true });
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -78,7 +80,7 @@ describe('ZhipuProvider', () => {
   it('底层网络异常包含密钥时，仍只抛出固定的安全文案', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error(`request headers: Bearer ${fakeKey}`)));
     const pending = new ZhipuProvider().chat(messages).catch((error) => error);
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(5500);
     const error = await pending;
     expect(error.code).toBe('NETWORK_ERROR');
     expect(`${error.message}\n${error.stack}\n${JSON.stringify(error)}`).not.toContain(fakeKey);

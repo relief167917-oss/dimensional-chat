@@ -6,8 +6,9 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["llm/**/*.ts", "characters/**/*.ts", "prompts/**/*.ts", "scripts/**/*.ts"]
+  "include": ["llm/**/*.ts", "characters/**/*.ts", "prompts/**/*.ts", "scripts/**/*.ts", "round/**/*.ts"]
 }

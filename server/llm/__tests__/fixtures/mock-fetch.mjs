@@ -4,12 +4,13 @@ globalThis.fetch = async (_url, init) => {
   const system = body.messages[0].content;
   let content;
   if (system.startsWith('你是「跨次元茶话会」的导演')) {
+    const ownerId = body.messages[1].content.match(/群主消息id=([^\n]+)/)[1];
     content = JSON.stringify({
       skip: false,
-      topic_keywords: ['减肥', '拖延'],
+      topicKeywords: ['减肥', '拖延'],
       turns: [
-        { speaker: 'sun_wukong', reply_to: 'user_1', intent: '用取经经验调侃群主把行动拖到明天', tone: '调侃', length: 'short' },
-        { speaker: 'zhu_bajie', reply_to: 'turn:0', intent: '接猴哥的话，自告奋勇监督却惦记省下的饭', tone: '捧场', length: 'short' },
+        { speaker: 'sun_wukong', replyTo: ownerId, intent: '用取经经验调侃群主把行动拖到明天', tone: '调侃', length: 'short' },
+        { speaker: 'zhu_bajie', replyTo: 'turn:0', intent: '接猴哥的话，自告奋勇监督却惦记省下的饭', tone: '捧场', length: 'short' },
       ],
     });
   } else {
