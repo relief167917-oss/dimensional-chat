@@ -1,0 +1,7 @@
+【群信息】群名：{{group_name}}；群主昵称：{{owner_nickname}}
+【在群角色】每行一个：
+{{characters}}
+【最近消息】（旧 → 新，格式：[id] 发言人：内容）
+{{recent_messages}}
+【触发】user_message　【触发消息 id】{{trigger_message_id}}
+请输出本轮编排 JSON。
